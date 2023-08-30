@@ -1,0 +1,6 @@
+{
+    "tasks": {
+        "build": "cd deimos && deno task lume",
+        "serve": "cd deimos && deno task lume -s"
+    }
+}
