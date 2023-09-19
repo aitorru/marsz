@@ -3,16 +3,34 @@
 {
 	"name": "Mars containers",
 	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
-	"image": "mcr.microsoft.com/devcontainers/base:debian",
+	// "image": "mcr.microsoft.com/devcontainers/base:debian",
+	"dockerComposeFile": [
+		"docker-compose.yml"
+	],
+	"service": "devcontainer",
 	"features": {
 		"ghcr.io/devcontainers/features/rust:1": {},
 		"ghcr.io/devcontainers-contrib/features/zig:1": {},
 		"ghcr.io/devcontainers-community/features/deno:1": {}
-	}
+	},
+	"postCreateCommand": "sudo apt update && sudo apt install pkg-config -y",
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"ziglang.vscode-zig",
+				"GitHub.copilot",
+				"github.copilot-chat",
+				"github.copilot-labs"
+			]
+		}
+	},
 	// Features to add to the dev container. More info: https://containers.dev/features.
 	// "features": {},
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
-	// "forwardPorts": [],
+	"forwardPorts": [
+		8081,
+		3000
+	]
 	// Use 'postCreateCommand' to run commands after the container is created.
 	// "postCreateCommand": "yarn install",
 	// Configure tool-specific properties.

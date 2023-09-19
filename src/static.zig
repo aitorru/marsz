@@ -1,6 +1,6 @@
 const std = @import("std");
 
-pub fn read_file(global_allocator: std.mem.Allocator, destination: *[]u8, comptime path: []const u8) void {
+pub fn read_file(global_allocator: std.mem.Allocator, destination: *[]u8, comptime path: []const u8, comptime delimiter: u8) void {
     if (destination.*.len == 0) {
         // Open the index file
         var file = std.fs.cwd().openFile(path, .{}) catch return;
@@ -10,7 +10,7 @@ pub fn read_file(global_allocator: std.mem.Allocator, destination: *[]u8, compti
         var in_stream = buf_reader.reader();
 
         // Reader buffer
-        var file_buffer: [1024]u8 = undefined;
+        var file_buffer: [5000]u8 = undefined;
 
         var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
         defer arena.deinit();
@@ -19,7 +19,8 @@ pub fn read_file(global_allocator: std.mem.Allocator, destination: *[]u8, compti
         var resulting_line: []u8 = "";
         var resulting_line_copy: []u8 = "";
 
-        while (in_stream.readUntilDelimiterOrEof(&file_buffer, '\n') catch return) |line| {
+        // TODO: readUntilDelimiterOrEof is depecrated. Use streamUntilDelimiter instead.
+        while (in_stream.readUntilDelimiterOrEof(&file_buffer, delimiter) catch return) |line| {
             resulting_line_copy = allocator.alloc(u8, resulting_line.len) catch return;
 
             std.mem.copy(u8, resulting_line_copy[0..], resulting_line[0..]);
