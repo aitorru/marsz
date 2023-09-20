@@ -49,3 +49,23 @@ pub fn copy_cstring_until_sentinel(global_allocator: std.mem.Allocator, destinat
     destination.* = try global_allocator.alloc(u8, i);
     @memcpy(destination.*[0..], result[0..]);
 }
+
+pub fn concatenate_string(global_allocator: std.mem.Allocator, origin: *[][]u8, destination: *[]u8) !void {
+    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    defer arena.deinit();
+    var allocator = arena.allocator();
+
+    var intermediary_buffer: []u8 = "";
+    for (origin.*) |str| {
+        var buffer: []u8 = try allocator.alloc(u8, str.len + intermediary_buffer.len);
+
+        @memcpy(buffer[0..intermediary_buffer.len], intermediary_buffer[0..]);
+        @memcpy(buffer[intermediary_buffer.len..], str[0..]);
+
+        intermediary_buffer = try allocator.alloc(u8, buffer.len);
+        @memcpy(intermediary_buffer[0..], buffer[0..]);
+    }
+
+    destination.* = try global_allocator.alloc(u8, intermediary_buffer.len);
+    @memcpy(destination.*[0..], intermediary_buffer[0..]);
+}

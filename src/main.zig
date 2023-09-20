@@ -45,9 +45,9 @@ fn pong(r: zap.SimpleRequest) void {
 }
 
 fn calculate_fetch(r: zap.SimpleRequest) void {
-    const allocator = std.heap.page_allocator;
-    defer allocator.free(index_list);
-    errdefer allocator.free(index_list);
+    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    defer arena.deinit();
+    var allocator = arena.allocator();
     var list = get_list_contents(username_secret.ptr, password_secret.ptr);
     utils.copy_cstring_until_sentinel(allocator, &index_list, &list) catch {
         r.sendError(ConvertError.AllocationError, 500);
@@ -61,25 +61,51 @@ fn calculate_fetch(r: zap.SimpleRequest) void {
         r.sendError(ConvertError.DecodeError, 500);
         return;
     };
-    _ = parser_json;
-    r.sendBody(
-        \\<div class="bg-stone-100/10 animate-pulse rounded w-5/6 h-36 grid grid-cols-2 gap-3 p-5">
-        \\  <div class="bg-stone-100/40 animate-pulse rounded"></div>
-        \\      <div class="col-span-2 bg-stone-100/40 animate-pulse rounded"></div>
-        \\      <div class="grid-cols-2 grid gap-3">
-        \\      <button class="bg-stone-100/40 animate-pulse rounded"></button>
-        \\      <button class="bg-stone-100/40 animate-pulse rounded"></button>
-        \\  </div>
-        \\</div>
-        \\<div class="bg-stone-100/10 animate-pulse rounded w-5/6 h-36 grid grid-cols-2 gap-3 p-5">
-        \\  <div class="bg-stone-100/40 animate-pulse rounded"></div>
-        \\      <div class="col-span-2 bg-stone-100/40 animate-pulse rounded"></div>
-        \\      <div class="grid-cols-2 grid gap-3">
-        \\      <button class="bg-stone-100/40 animate-pulse rounded"></button>
-        \\      <button class="bg-stone-100/40 animate-pulse rounded"></button>
-        \\  </div>
-        \\</div>
-    ) catch return;
+
+    var html_list: []u8 = undefined;
+    defer allocator.free(html_list);
+    var html_lists: [][]u8 = allocator.alloc([]u8, parser_json.len) catch |err| {
+        std.debug.print("Error: {any}\n", .{err});
+        r.sendError(ConvertError.AllocationError, 500);
+        return;
+    };
+
+    for (parser_json, 0..) |item, index| {
+        const template =
+            \\<div class="bg-stone-100/10 rounded w-5/6 h-36 grid grid-cols-2 gap-3 p-5">
+            \\  <div class="bg-stone-100/40 rounded">{s}</div>
+            \\  <div class="col-span-2 rounded">{s}</div>
+            \\  <div class="grid-cols-2 grid gap-3">
+            \\      <button class="bg-stone-100/40 animate-pulse rounded"></button>
+            \\      <button class="bg-stone-100/40 animate-pulse rounded"></button>
+            \\  </div>
+            \\</div>
+        ;
+
+        var buffer: [1024]u8 = undefined;
+
+        const filled_buffer = std.fmt.bufPrintZ(&buffer, template, .{ item.name, item.link }) catch |err| {
+            std.debug.print("Error: {any}\n", .{err});
+            r.sendError(ConvertError.AllocationError, 500);
+            return;
+        };
+
+        html_lists[index] = allocator.alloc(u8, filled_buffer.len) catch |err| {
+            std.debug.print("Error: {any}\n", .{err});
+            r.sendError(ConvertError.AllocationError, 500);
+            return;
+        };
+
+        @memcpy(html_lists[index][0..filled_buffer.len], filled_buffer[0..]);
+    }
+
+    utils.concatenate_string(allocator, &html_lists, &html_list) catch |err| {
+        std.debug.print("Error: {any}\n", .{err});
+        r.sendError(ConvertError.AllocationError, 500);
+        return;
+    };
+
+    r.sendBody(html_list) catch return;
 }
 
 fn setup_routes(a: std.mem.Allocator) !void {
