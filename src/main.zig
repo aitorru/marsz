@@ -34,9 +34,15 @@ fn return_index(r: zap.SimpleRequest) void {
     r.sendBody(index_contents) catch return;
 }
 
+const HeaderError = error{ HeaderNotFound, HeaderNotValid };
+
 var styles_contents: []u8 = "";
 fn return_styles(r: zap.SimpleRequest) void {
     static.read_file(global_allocator, &styles_contents, "deimos/_site/styles.css", '\n');
+    r.setHeader("Content-type", "text/css") catch {
+        r.sendError(HeaderError.HeaderNotValid, 500);
+        return;
+    };
     r.sendBody(styles_contents) catch return;
 }
 
@@ -73,12 +79,12 @@ fn calculate_fetch(r: zap.SimpleRequest) void {
     for (parser_json, 0..) |item, index| {
         const template =
             \\<div class="bg-stone-100/10 rounded w-5/6 h-36 grid grid-cols-2 gap-3 p-5">
-            \\  <div class="bg-stone-100/40 rounded">{s}</div>
-            \\  <div class="col-span-2 rounded">{s}</div>
-            \\  <div class="grid-cols-2 grid gap-3">
-            \\      <button class="bg-stone-100/40 animate-pulse rounded"></button>
-            \\      <button class="bg-stone-100/40 animate-pulse rounded"></button>
-            \\  </div>
+            \\ <div class="text-4xl text-white font-semibold">{s}</div>
+            \\ <div class="col-span-2 text-sm text-white font-semibold">{s}</div>
+            \\ <div class="grid-cols-2 grid gap-3">
+            \\  <button class="bg-amber-400 rounded text-black font-semibold text-sm">Open</button>
+            \\  <button class="bg-red-600 rounded text-black font-semibold text-sm">Delete</button>
+            \\</div>
             \\</div>
         ;
 
@@ -108,6 +114,13 @@ fn calculate_fetch(r: zap.SimpleRequest) void {
     r.sendBody(html_list) catch return;
 }
 
+fn new_link(r: zap.SimpleRequest) void {
+    const body = if (r.body) |b| b else "No body";
+    std.debug.print("Body: {s}\n", .{body});
+
+    r.sendBody("Ok") catch return;
+}
+
 fn setup_routes(a: std.mem.Allocator) !void {
     routes = std.StringHashMap(zap.SimpleHttpRequestFn).init(a);
     try routes.put("/", return_index);
@@ -115,6 +128,7 @@ fn setup_routes(a: std.mem.Allocator) !void {
     try routes.put("/styles.css", return_styles);
     try routes.put("/fetch", calculate_fetch);
     try routes.put("/ping", pong);
+    try routes.put("/new", new_link);
 }
 
 var routes: std.StringHashMap(zap.SimpleHttpRequestFn) = undefined;

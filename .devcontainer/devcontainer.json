@@ -20,7 +20,8 @@
 				"ziglang.vscode-zig",
 				"GitHub.copilot",
 				"github.copilot-chat",
-				"github.copilot-labs"
+				"github.copilot-labs",
+				"bradlc.vscode-tailwindcss"
 			]
 		}
 	},
