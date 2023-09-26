@@ -47,7 +47,7 @@ struct Link {
 
 #[tokio::main]
 async fn connect_and_get_data_async(credentials: Credentials) -> mongodb::error::Result<Vec<Link>> {
-    // println!("{:?}", credentials);
+    println!("{:?}", credentials);
     // TODO: Credentials are fucked.
     let uri = "mongodb://root:example@localhost:27017/";
     let client_options = ClientOptions::parse(uri).await?;

@@ -1,10 +1,12 @@
 const std = @import("std");
 
-// pub fn nullTerminate(str: []const u8) ![]u8 {
-//     var nullTermStr = try std.mem.dupe(u8, std.heap.page_allocator, str);
-//     try nullTermStr.append(0); // Add null terminator
-//     return nullTermStr;
-// }
+pub fn nullTerminate(global_allocator: std.mem.Allocator, str: []const u8) ![*:0]const u8 {
+    var result: [*:0]u8 = undefined;
+    result = try global_allocator.allocSentinel(u8, str.len + 1, 0);
+    @memcpy(result[0..str.len], str[0..]);
+    result[str.len] = 0;
+    return result;
+}
 
 pub fn copy_cstring_until_sentinel(global_allocator: std.mem.Allocator, destination: *[]u8, origin: *[*:0]const u8) !void {
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);

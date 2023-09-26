@@ -54,7 +54,7 @@ fn calculate_fetch(r: zap.SimpleRequest) void {
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena.deinit();
     var allocator = arena.allocator();
-    var list = get_list_contents(username_secret.ptr, password_secret.ptr);
+    var list = get_list_contents(username_secret_c, password_secret_c);
     utils.copy_cstring_until_sentinel(allocator, &index_list, &list) catch {
         r.sendError(ConvertError.AllocationError, 500);
         return;
@@ -115,8 +115,15 @@ fn calculate_fetch(r: zap.SimpleRequest) void {
 }
 
 fn new_link(r: zap.SimpleRequest) void {
-    const body = if (r.body) |b| b else "No body";
+    const body = if (r.body) |b| b else return;
     std.debug.print("Body: {s}\n", .{body});
+
+    // var name: [512]u8 = undefined;
+    // var link: [512]u8 = undefined;
+
+    // for (body) |s| {
+
+    // }
 
     r.sendBody("Ok") catch return;
 }
@@ -137,16 +144,17 @@ var global_arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
 var global_allocator = global_arena.allocator();
 
 var username_secret: []u8 = undefined;
+var username_secret_c: [*:0]const u8 = undefined;
 var password_secret: []u8 = undefined;
+var password_secret_c: [*:0]const u8 = undefined;
 
 pub fn main() !void {
     // Read the credentials
     static.read_file(global_allocator, &username_secret, "secret_username", '\n');
     static.read_file(global_allocator, &password_secret, "secret_password", '\n');
     // Make them null terminated
-    // TODO: Fix this
-    // username_secret = try utils.nullTerminate(username_secret);
-    // password_secret = try utils.nullTerminate(password_secret);
+    username_secret_c = try utils.nullTerminate(global_allocator, username_secret);
+    password_secret_c = try utils.nullTerminate(global_allocator, password_secret);
     // Setup all the routes
     try setup_routes(std.heap.page_allocator);
     // Clean memory
