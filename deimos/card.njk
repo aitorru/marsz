@@ -6,10 +6,12 @@ tops:
       url: "/fetch"
 ---
 <div class="bg-stone-100/10 rounded w-5/6 max-w-fit h-36 max-h-fit grid grid-cols-2 gap-3 p-5">
-  <div class="text-4xl text-white font-semibold">asdfasdf</div>
-  <div class="col-span-2 text-sm text-white font-semibold">a sdfasd fasd fasd f</div>
+  <div id="name" class="text-3xl text-white font-semibold">asdfasdf</div>
+  <div id="link" class="col-span-2 text-sm text-white font-semibold">a sdfasd fasd fasd f</div>
   <div class="grid-cols-2 grid gap-3">
     <button class="bg-amber-400 hover:scale-110 rounded text-black font-semibold text-sm">Open</button>
-    <button class="bg-red-600 hover:scale-110 rounded text-black font-semibold text-sm">Delete</button>
+    <button class="bg-red-600 hover:scale-110 rounded text-black font-semibold text-sm" _="
+    on click set :url to
+    ">Delete</button>
   </div>
 </div>

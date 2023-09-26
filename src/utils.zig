@@ -9,6 +9,7 @@ pub fn nullTerminate(global_allocator: std.mem.Allocator, str: []const u8) ![*:0
 }
 
 pub fn copy_cstring_until_sentinel(global_allocator: std.mem.Allocator, destination: *[]u8, origin: *[*:0]const u8) !void {
+    // TODO: This is a fever dream, I need to find a better way to do this. Arraylists?
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena.deinit();
     var allocator = arena.allocator();

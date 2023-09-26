@@ -3,9 +3,12 @@ const fs = std.fs;
 const static = @import("static.zig");
 const utils = @import("utils.zig");
 const zap = @import("zap");
+const ArrayList = std.ArrayList;
 
 extern fn start() void;
 extern fn get_list_contents(u: [*]const u8, p: [*]const u8) [*:0]const u8;
+extern fn decode_url(u: [*]const u8) [*:0]u8;
+extern fn upload_new_link(n: [*]const u8, l: [*]const u8, u: [*]const u8, p: [*]const u8) bool;
 
 fn dispatch_routes(r: zap.SimpleRequest) void {
     // dispatch
@@ -79,7 +82,7 @@ fn calculate_fetch(r: zap.SimpleRequest) void {
     for (parser_json, 0..) |item, index| {
         const template =
             \\<div class="bg-stone-100/10 rounded w-5/6 h-36 grid grid-cols-2 gap-3 p-5">
-            \\ <div class="text-4xl text-white font-semibold">{s}</div>
+            \\ <div class="text-2xl text-white font-semibold">{s}</div>
             \\ <div class="col-span-2 text-sm text-white font-semibold">{s}</div>
             \\ <div class="grid-cols-2 grid gap-3">
             \\  <button class="bg-amber-400 rounded text-black font-semibold text-sm">Open</button>
@@ -114,18 +117,115 @@ fn calculate_fetch(r: zap.SimpleRequest) void {
     r.sendBody(html_list) catch return;
 }
 
+const BodyParserPart = enum {
+    Pre,
+    Name,
+    Divider,
+    Link,
+};
+
+const UploadError = error{CouldNotUpload};
+
 fn new_link(r: zap.SimpleRequest) void {
     const body = if (r.body) |b| b else return;
-    std.debug.print("Body: {s}\n", .{body});
 
-    // var name: [512]u8 = undefined;
-    // var link: [512]u8 = undefined;
+    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    defer arena.deinit();
+    var allocator = arena.allocator();
 
-    // for (body) |s| {
+    var part = BodyParserPart.Pre;
 
-    // }
+    var count: usize = 0;
 
-    r.sendBody("Ok") catch return;
+    var name = ArrayList(u8).init(allocator);
+    var link = ArrayList(u8).init(allocator);
+
+    // TODO: This is a very naive parser, it should be improved
+    for (body) |s| {
+        switch (part) {
+            BodyParserPart.Pre => {
+                if (s == '=') {
+                    part = BodyParserPart.Name;
+                }
+            },
+            BodyParserPart.Name => {
+                if (s == '&') {
+                    part = BodyParserPart.Divider;
+                } else {
+                    // Only the name require the + to be replaced with a space
+                    name.append(if (s == '+') ' ' else s) catch |err| {
+                        std.debug.print("Error: {any}\n", .{err});
+                        r.sendError(ConvertError.AllocationError, 500);
+                        return;
+                    };
+                }
+            },
+            BodyParserPart.Divider => {
+                if (s == '=') {
+                    part = BodyParserPart.Link;
+                    count = 0;
+                }
+            },
+            BodyParserPart.Link => {
+                if (s == ' ') {
+                    break;
+                } else {
+                    link.append(s) catch |err| {
+                        std.debug.print("Error: {any}\n", .{err});
+                        r.sendError(ConvertError.AllocationError, 500);
+                        return;
+                    };
+                }
+            },
+        }
+    }
+    // TODO: This needs cleaning up
+    // Now decode the url
+    var decoded_link_sentinel = decode_url(utils.nullTerminate(allocator, link.items) catch |err| {
+        std.debug.print("Error: {any}\n", .{err});
+        r.sendError(ConvertError.AllocationError, 500);
+        return;
+    });
+
+    var dedoced_link: []u8 = undefined;
+
+    utils.copy_cstring_until_sentinel(allocator, &dedoced_link, &decoded_link_sentinel) catch |err| {
+        std.debug.print("Error: {any}\n", .{err});
+        r.sendError(ConvertError.AllocationError, 500);
+        return;
+    };
+
+    std.debug.print("Decoded link: {s}\n", .{dedoced_link});
+
+    // Now upload the new link
+    var upload_result = upload_new_link(
+        utils.nullTerminate(allocator, name.items) catch |err| {
+            std.debug.print("Error: {any}\n", .{err});
+            r.sendError(ConvertError.AllocationError, 500);
+            return;
+        },
+        utils.nullTerminate(allocator, dedoced_link) catch |err| {
+            std.debug.print("Error: {any}\n", .{err});
+            r.sendError(ConvertError.AllocationError, 500);
+            return;
+        },
+        username_secret_c,
+        password_secret_c,
+    );
+
+    if (upload_result) {
+        std.debug.print("Uploaded new link\n", .{});
+        r.sendBody("Ok") catch return;
+    } else {
+        std.debug.print("Failed to upload new link\n", .{});
+        r.sendError(UploadError.CouldNotUpload, 500);
+    }
+}
+
+fn delete_entry(r: zap.SimpleRequest) void {
+    // TODO: Implement
+    _ = r;
+    unreachable;
 }
 
 fn setup_routes(a: std.mem.Allocator) !void {
@@ -136,6 +236,7 @@ fn setup_routes(a: std.mem.Allocator) !void {
     try routes.put("/fetch", calculate_fetch);
     try routes.put("/ping", pong);
     try routes.put("/new", new_link);
+    try routes.put("/delete", delete_entry);
 }
 
 var routes: std.StringHashMap(zap.SimpleHttpRequestFn) = undefined;
