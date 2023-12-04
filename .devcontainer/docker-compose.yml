@@ -1,11 +1,20 @@
 version: "3.1"
 services:
-  devcontainer:
-    image: mcr.microsoft.com/devcontainers/base:debian
+  dev:
+    build:
+      context: ../
+      dockerfile: .devcontainer/Dockerfile
+      args:
+        USER_UID: ${USER_UID:-1000}
+        USER_GID: ${USER_GID:-1000}
+    environment:
+      # list of docker extensions to load before other extensions
+      PRELOAD_EXTENSIONS: "arrterian.nix-env-selector"
     volumes:
-      - ../..:/workspaces:cached
-    network_mode: service:mongo
-    command: sleep infinity
+      - ..:/workspace:cached
+    security_opt:
+      - label:disable
+    network_mode: "bridge"
   mongo:
     image: mongo
     restart: always

@@ -1,41 +1,40 @@
 // For format details, see https://aka.ms/devcontainer.json. For config options, see the
 // README at: https://github.com/devcontainers/templates/tree/main/src/typescript-node
 {
-	"name": "Mars containers",
-	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
-	// "image": "mcr.microsoft.com/devcontainers/base:debian",
-	"dockerComposeFile": [
-		"docker-compose.yml"
-	],
-	"service": "devcontainer",
-	"features": {
-		"ghcr.io/devcontainers/features/rust:1": {},
-		"ghcr.io/devcontainers-contrib/features/zig:1": {},
-		"ghcr.io/devcontainers-community/features/deno:1": {}
-	},
-	"postCreateCommand": "sudo apt update && sudo apt install pkg-config -y",
-	"customizations": {
-		"vscode": {
-			"extensions": [
-				"ziglang.vscode-zig",
-				"GitHub.copilot",
-				"github.copilot-chat",
-				"github.copilot-labs",
-				"bradlc.vscode-tailwindcss"
-			]
-		}
-	},
-	// Features to add to the dev container. More info: https://containers.dev/features.
-	// "features": {},
-	// Use 'forwardPorts' to make a list of ports inside the container available locally.
-	"forwardPorts": [
-		8081,
-		3000
-	]
-	// Use 'postCreateCommand' to run commands after the container is created.
-	// "postCreateCommand": "yarn install",
-	// Configure tool-specific properties.
-	// "customizations": {},
-	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
-	// "remoteUser": "root"
+  "name": "Mars containers",
+  // Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
+  // "image": "mcr.microsoft.com/devcontainers/base:debian",
+  "dockerComposeFile": ["docker-compose.yml"],
+  "service": "dev",
+  "workspaceFolder": "/workspace",
+
+  // disable command overriding and updating remote user ID
+  "userEnvProbe": "loginShell",
+  "updateRemoteUserUID": false,
+
+  "postCreateCommand": "sudo apt update && sudo apt install gnupg2 -y && nix-shell --command 'echo done building nix dev environment'",
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "arrterian.nix-env-selector",
+        "bbenoist.Nix",
+        "ziglang.vscode-zig",
+        "GitHub.copilot",
+        "github.copilot-chat",
+        "github.copilot-labs",
+        "bradlc.vscode-tailwindcss"
+      ]
+    }
+  },
+  // Features to add to the dev container. More info: https://containers.dev/features.
+  // "features": {},
+  // Use 'forwardPorts' to make a list of ports inside the container available locally.
+  "forwardPorts": [8081, 3000]
+  // Use 'postCreateCommand' to run commands after the container is created.
+  // "postCreateCommand": "yarn install",
+  // Configure tool-specific properties.
+  // "customizations": {},
+  // Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
+  // "remoteUser": "root"
 }
