@@ -12,7 +12,7 @@
   "userEnvProbe": "loginShell",
   "updateRemoteUserUID": false,
 
-  "postCreateCommand": "sudo apt update && sudo apt install gnupg2 -y && nix-shell --command 'echo done building nix dev environment'",
+  "postCreateCommand": "sudo apt update && sudo apt install gnupg2 -y && nix-shell --command 'rustup default stable && echo done building nix dev environment'",
 
   "customizations": {
     "vscode": {
@@ -20,6 +20,7 @@
         "arrterian.nix-env-selector",
         "bbenoist.Nix",
         "ziglang.vscode-zig",
+        "rust-lang.rust-analyzer",
         "GitHub.copilot",
         "github.copilot-chat",
         "github.copilot-labs",

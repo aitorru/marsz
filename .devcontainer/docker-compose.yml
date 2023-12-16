@@ -14,7 +14,7 @@ services:
       - ..:/workspace:cached
     security_opt:
       - label:disable
-    network_mode: "bridge"
+    network_mode: "service:mongo"
   mongo:
     image: mongo
     restart: always

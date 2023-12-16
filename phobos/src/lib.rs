@@ -68,6 +68,19 @@ pub extern "C" fn upload_new_link(
     }
 }
 
+#[no_mangle]
+pub extern "C" fn delete_link(
+    id: *const c_char,
+    u: *const c_char,
+    p: *const c_char,
+) -> bool {
+    let credentials: Credentials = Credentials {
+        username: translate_pointer(u).unwrap(),
+        password: translate_pointer(p).unwrap(),
+    }
+    
+}
+
 #[derive(Debug)]
 struct Credentials {
     username: String,
@@ -85,7 +98,6 @@ struct Link {
 
 #[tokio::main]
 async fn connect_and_get_data_async(credentials: Credentials) -> mongodb::error::Result<Vec<Link>> {
-    // TODO: Credentials are fucked.
     let uri = format!(
         "mongodb://{}:{}@localhost:27017/",
         credentials.username, credentials.password
@@ -120,9 +132,6 @@ async fn connect_and_get_data_async(credentials: Credentials) -> mongodb::error:
 
 #[tokio::main]
 async fn upload_new_link_async(credentials: Credentials, link: Link) -> mongodb::error::Result<()> {
-    println!("Credentials: {:?}", credentials);
-    println!("Link: {:?}", link);
-
     let uri = format!(
         "mongodb://{}:{}@localhost:27017/",
         credentials.username, credentials.password
@@ -137,6 +146,26 @@ async fn upload_new_link_async(credentials: Credentials, link: Link) -> mongodb:
     let collection = client.database("mars").collection::<Link>("links");
 
     let _ = collection.insert_one(link, None).await?;
+
+    Ok(())
+}
+
+#[tokio::main]
+async fn delete_link_async(credentials: Credentials, link: Link) -> mongodb::error::Result<()> {
+    let uri = format!(
+        "mongodb://{}:{}@localhost:27017/",
+        credentials.username, credentials.password
+    );
+    let client_options = ClientOptions::parse(uri).await?;
+
+    // Create a new client and connect to the server
+    let client = Client::with_options(client_options)?;
+    // Send a ping to confirm a successful connection
+
+    // Get all documents from the database mars and the links folder
+    let collection = client.database("mars").collection::<Link>("links");
+
+    let _ = collection.delete_one(link, None).await?;
 
     Ok(())
 }

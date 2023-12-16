@@ -253,7 +253,7 @@ pub fn main() !void {
     // Read the credentials
     static.read_file(global_allocator, &username_secret, "secret_username", '\n');
     static.read_file(global_allocator, &password_secret, "secret_password", '\n');
-    // Make them null terminated
+    // Make they are null terminated
     username_secret_c = try utils.nullTerminate(global_allocator, username_secret);
     password_secret_c = try utils.nullTerminate(global_allocator, password_secret);
     // Setup all the routes
